@@ -1,4 +1,6 @@
 import datetime
 
-with open("data.txt", "w") as f:
-    f.write("Parser ran at: " + str(datetime.datetime.now()))
+timestamp = datetime.datetime.now()
+
+with open("data.txt", "a") as f:
+    f.write(f"Parser ran at: {timestamp}\n")
