@@ -2,12 +2,9 @@ name: Stepik daily stats
 
 on:
   schedule:
-    # Каждый день в 06:00 (внимание: время в UTC)
+    # Каждый день в 06:00 UTC
     - cron: "0 6 * * *"
   workflow_dispatch: {}
-
-permissions:
-  contents: write
 
 jobs:
   run-stepik-parser:
@@ -16,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # нужно для пуша обратно
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,15 +24,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # если зависимостей нет, этот шаг можно удалить
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run Stepik daily stats script
         run: |
           python stepik_courses_daily_stats.py
 
-      - name: Upload CSV as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: stepik-courses-daily
-          path: stepik_courses_daily.csv
+      - name: Commit CSV
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stepik_courses_daily.csv
+          git commit -m "Update daily Stepik stats" || echo "Nothing to commit"
+
+      - name: Push changes
+        env:
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          git push "https://x-access-token:${REPO_TOKEN}@github.com/${{ github.repository }}" HEAD:${{ github.ref_name }}
