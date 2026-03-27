@@ -96,6 +96,15 @@ def fetch_all_departures_from_api(base_date: datetime) -> List[Dict]:
         actual_dt_raw = item.get("t_otpr")
         planned_dt = parse_iso_dt(planned_dt_raw)
         actual_dt = parse_iso_dt(actual_dt_raw)
+        # В API статус часто приходит как "Прибыл ...~Рейс за dd.mm.yy"
+        raw_status = (
+            item.get("vip_status_rus")
+            or item.get("vip_status")
+            or item.get("vip_status_eng")
+            or item.get("st")
+            or ""
+        )
+        status = normalize_space(str(raw_status).split("~")[0])
 
         out.append(
             {
@@ -106,6 +115,7 @@ def fetch_all_departures_from_api(base_date: datetime) -> List[Dict]:
                 "destination": destination,
                 "departure_airport_name": departure_airport_name,
                 "airport_name": airport_name,
+                "status": status,
                 "planned_departure_time": hhmm_from_iso(planned_dt_raw),
                 "actual_departure_time": hhmm_from_iso(actual_dt_raw),
                 "planned_departure_datetime": planned_dt.strftime("%Y-%m-%d %H:%M") if planned_dt else None,
